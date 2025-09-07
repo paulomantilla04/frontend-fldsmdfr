@@ -4,6 +4,7 @@ import Image from "next/image";
 import { UserRound, Lock, Eye, EyeClosed  } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { montserrat } from "../fonts";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -26,7 +27,7 @@ export default function Login() {
             console.log("Datos de inicio de sesión:", { email, password });
             await new Promise(resolve => setTimeout(resolve, 2000)); // Simulación de llamada a API
 
-            router.push('/dashboard');
+            router.push('/tickets');
 
         } catch (err) {
             setError("Email o contraseña incorrectos. Por favor, intenta de nuevo.");
@@ -38,7 +39,7 @@ export default function Login() {
 
     return (
         <main className="custom-grid-background min-h-screen flex items-center justify-center p-4">
-            <Card className="w-full max-w-lg p-4">
+            <Card className={`w-full max-w-lg p-4 ${montserrat.className}`}>
                 <CardHeader className="flex justify-center">
                     <Image src="/logo.svg" alt="Logo" width={250} height={250} className="w-full max-w-[300px] h-auto" priority/>
                 </CardHeader>
