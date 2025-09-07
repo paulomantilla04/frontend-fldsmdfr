@@ -10,7 +10,6 @@ import {
     Ticket,
     Download,
     Clipboard,
-    UserRound,
 } from 'lucide-react';
 
 import Image from 'next/image';
@@ -30,22 +29,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {
             label: 'Administrar Tickets',
             href: '/tickets',
-            icon: <Ticket className="w-5 h-5 text-black flex-shrink-0" />
+            icon: <Ticket className="w-5 h-5 flex-shrink-0" />
         },
         {
             label: 'Reportes',
             href: '/reports',
-            icon: <Clipboard className="w-5 h-5 text-black flex-shrink-0" />
+            icon: <Clipboard className="w-5 h-5 flex-shrink-0" />
         },
         {
             label: 'Descargas',
             href: '/downloads',
-            icon: <Download className="w-5 h-5 text-black flex-shrink-0" />
-        },
-        {
-            label: 'Perfil',
-            href: '/profile',
-            icon: <UserRound className="w-5 h-5 text-black flex-shrink-0" />
+            icon: <Download className="w-5 h-5 flex-shrink-0" />
         },
     ]
 
