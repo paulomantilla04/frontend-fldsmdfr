@@ -74,9 +74,17 @@ export default function Login() {
         setIsLoading(true);
         setError("");
 
+        // simular error de credenciales incorrectas
+        if (email != "paulo@mail.com" || password != "paulo123") {
+            setError("Email o contraseña incorrectos. Por favor, intenta de nuevo.");
+            setIsLoading(false);
+            return;
+        }
+
+        
         try {
             console.log("Datos de inicio de sesión:", { email, password });
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Simulación de llamada a API
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             router.push('/tickets');
 
@@ -135,7 +143,7 @@ export default function Login() {
                             isRequired
                         />
                         </motion.div>
-                        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                        {error && <motion.p variants={staggerItemXNegative} className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded-md">{error}</motion.p>}
 
                     </CardBody>
                     <CardFooter className="flex flex-col items-center mt-10 overflow-hidden">

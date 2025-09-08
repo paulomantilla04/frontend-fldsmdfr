@@ -5,11 +5,13 @@ import Link, { LinkProps } from "next/link";
 import React, { useState, createContext, useContext } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 interface Links {
   label: string;
-  href: string;
+  href: string; 
   icon: React.JSX.Element | React.ReactNode;
+  onClick?: () => void;
 }
 
 interface SidebarContextProps {
@@ -164,11 +166,17 @@ export const SidebarLink = ({
   props?: LinkProps;
 }) => {
   const { open, animate } = useSidebar();
-  return (
+  const pathname = usePathname();
+  const isActive = pathname === link.href;
+  return link.href ? (
     <Link
       href={link.href}
+      onClick={link.onClick}
       className={cn(
-        "flex items-center justify-start gap-2 group/sidebar py-2",
+        "relative flex items-center justify-start gap-2 group/sidebar py-2",
+        {
+          "underline underline-offset-4 duration-300 text-[#5478FF] font-bold transition-colors": isActive,
+        },
         className
       )}
       {...props}
@@ -179,10 +187,32 @@ export const SidebarLink = ({
           display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
-        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+        className={cn("text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block p-0 m-0", {
+          "text-[#5478FF] font-bold transition-colors duration-300": isActive,
+        })}
       >
         {link.label}
       </motion.span>
     </Link>
+  ) : (
+    <button
+      type="button"
+      onClick={link.onClick}
+      className={cn(
+        "relative flex items-center justify-start gap-2 group/sidebar py-2",
+        className
+      )}
+    >
+      {link.icon}
+      <motion.span
+        animate={{
+          display: animate ? (open ? "inline-block" : "none") : "inline-block",
+          opacity: animate ? (open ? 1 : 0) : 1,
+        }}
+        className={cn("text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block p-0 m-0")}
+      >
+        {link.label}
+      </motion.span>
+    </button>
   );
 };
