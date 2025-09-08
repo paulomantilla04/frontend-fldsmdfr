@@ -2,9 +2,10 @@
 import { Card, CardBody, CardHeader, Input, Button, CardFooter, Link, Spinner } from "@heroui/react";
 import Image from "next/image";
 import { UserRound, Lock, Eye, EyeClosed  } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { montserrat } from "../fonts";
+import { motion, useInView, Variants} from 'framer-motion';
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -13,6 +14,56 @@ export default function Login() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+
+    const ref = useRef<HTMLDivElement>(null);
+    const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+    const staggerContainer: Variants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.1,
+            }
+        }
+    } 
+
+    const staggerItemXPositive: Variants = {
+        hidden: { opacity: 0, x: 30 },
+        visible: {
+            opacity: 1,
+            x: 0,
+            transition: {
+                duration: 0.5,
+                ease: [0.25, 0.1, 0.25, 1],
+            }
+        }
+    };
+
+    const staggerItemXNegative: Variants = {
+        hidden: { opacity: 0, x: -30 },
+        visible: {
+            opacity: 1,
+            x: 0,
+            transition: {
+                duration: 0.5,
+                ease: [0.25, 0.1, 0.25, 1],
+            }
+        }
+    }
+
+    const staggerItemYPositive: Variants = {
+        hidden: { opacity: 0, y: 30 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.5,
+                ease: [0.25, 0.1, 0.25, 1],
+            }
+        }
+    }
 
     const handlePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
@@ -23,9 +74,17 @@ export default function Login() {
         setIsLoading(true);
         setError("");
 
+        // simular error de credenciales incorrectas
+        if (email != "paulo@mail.com" || password != "paulo123") {
+            setError("Email o contraseña incorrectos. Por favor, intenta de nuevo.");
+            setIsLoading(false);
+            return;
+        }
+
+        
         try {
             console.log("Datos de inicio de sesión:", { email, password });
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Simulación de llamada a API
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             router.push('/tickets');
 
@@ -38,28 +97,35 @@ export default function Login() {
     };
 
     return (
-        <main className="custom-grid-background min-h-screen flex items-center justify-center p-4">
+        <motion.main ref={ref} variants={staggerContainer} initial="hidden" animate={isInView ? "visible" : "hidden"} className="custom-grid-background min-h-screen flex items-center justify-center p-4">
             <Card className={`w-full max-w-lg p-4 ${montserrat.className}`}>
                 <CardHeader className="flex justify-center">
-                    <Image src="/logo.svg" alt="Logo" width={250} height={250} className="w-full max-w-[300px] h-auto" priority/>
+                    <motion.div variants={staggerItemXPositive}>
+                        <Image src="/logo.svg" alt="Logo" width={250} height={250} className="w-full max-w-[300px] h-auto" priority/>
+                    </motion.div>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
-                    <CardBody className="gap-4 text-center">
-                        <div className="flex flex-col mb-4">
-                            <h2 className="text-black dark:text-white font-bold text-2xl">¡Bienvenido!</h2>
-                            <p className="text-gray-500 dark:text-gray-400">Inicia sesión para continuar</p>
-                        </div>
-                        <Input 
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            label="Email" 
-                            labelPlacement="outside"
-                            type="email"
-                            placeholder="usuario@ejemplo.com"
-                            variant="faded" 
-                            startContent={<UserRound className="text-gray-500"/>}
-                            isRequired
-                        />
+                    <CardBody className="space-y-4 text-center overflow-hidden">
+                        <motion.div className="flex flex-col mb-4 overflow-hidden">
+                            <motion.h2 variants={staggerItemXPositive} className="text-black dark:text-white font-bold text-2xl">¡Bienvenido!</motion.h2>
+                            <motion.p variants={staggerItemXNegative} className="text-gray-500 dark:text-gray-400">Inicia sesión para continuar</motion.p>
+                        </motion.div>
+                        <motion.div variants={staggerItemXPositive}>
+                            <Input 
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                label="Email" 
+                                labelPlacement="outside"
+                                type="email"
+                                placeholder="usuario@ejemplo.com"
+                                variant="faded" 
+                                startContent={<UserRound className="text-gray-500"/>}
+                                isRequired
+                            />
+                        </motion.div>
+                        <motion.div variants={staggerItemXNegative}>
+                            
+                        
                         <Input 
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -76,21 +142,23 @@ export default function Login() {
                             }
                             isRequired
                         />
-                        
-                        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                        </motion.div>
+                        {error && <motion.p variants={staggerItemXNegative} className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded-md">{error}</motion.p>}
 
                     </CardBody>
-                    <CardFooter className="flex flex-col items-center mt-10">    
-                        <Button 
-                            type="submit"
-                            className="rounded-xl bg-[#0e35bf] text-white w-full" 
-                            disabled={email === "" || password === "" || isLoading}
-                        >
-                            {isLoading ? <Spinner color="white" size="sm"/> : "Iniciar sesión"}
-                        </Button>
+                    <CardFooter className="flex flex-col items-center mt-10 overflow-hidden">
+                        <motion.div variants={staggerItemYPositive} className="w-full">
+                            <Button 
+                                type="submit"
+                                className="rounded-xl bg-[#0e35bf] text-white w-full" 
+                                disabled={email === "" || password === "" || isLoading}
+                            >
+                                {isLoading ? <Spinner color="white" size="sm"/> : "Iniciar sesión"}
+                            </Button>
+                        </motion.div>
                     </CardFooter>
                 </form>
             </Card>
-        </main>
+        </motion.main>
     )
 }

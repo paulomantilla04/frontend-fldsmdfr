@@ -10,11 +10,12 @@ import {
     Ticket,
     Download,
     Clipboard,
-    UserRound,
+    LogOut,
 } from 'lucide-react';
 
 import Image from 'next/image';
 import { montserrat } from "../fonts";
+import { useRouter } from "next/navigation";
 
 
 interface AppLayoutProps {
@@ -25,27 +26,22 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
-
+    const router = useRouter();
     const links = [
         {
             label: 'Administrar Tickets',
             href: '/tickets',
-            icon: <Ticket className="w-5 h-5 text-black flex-shrink-0" />
+            icon: <Ticket className="w-5 h-5 flex-shrink-0" />
         },
         {
             label: 'Reportes',
             href: '/reports',
-            icon: <Clipboard className="w-5 h-5 text-black flex-shrink-0" />
+            icon: <Clipboard className="w-5 h-5 flex-shrink-0" />
         },
         {
             label: 'Descargas',
             href: '/downloads',
-            icon: <Download className="w-5 h-5 text-black flex-shrink-0" />
-        },
-        {
-            label: 'Perfil',
-            href: '/profile',
-            icon: <UserRound className="w-5 h-5 text-black flex-shrink-0" />
+            icon: <Download className="w-5 h-5 flex-shrink-0" />
         },
     ]
 
@@ -80,6 +76,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
                       height={40}
                     />
                   ),
+                }}
+              />
+            </div>
+
+            <div className={`${montserrat.className}`}>
+              <SidebarLink
+                link={{
+                  label: "Cerrar sesión",
+                  href: "/login",
+                  onClick: () => {
+                    localStorage.removeItem("token");
+                    router.push("/login");
+                  },
+                  icon: <LogOut className="w-5 h-5 flex-shrink-0" />
                 }}
               />
             </div>
