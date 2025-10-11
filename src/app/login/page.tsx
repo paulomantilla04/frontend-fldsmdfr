@@ -2,18 +2,27 @@
 import { Card, CardBody, CardHeader, Input, Button, CardFooter, Link, Spinner } from "@heroui/react";
 import Image from "next/image";
 import { UserRound, Lock, Eye, EyeClosed  } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { montserrat } from "../fonts";
 import { motion, useInView, Variants} from 'framer-motion';
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Login() {
-    const [email, setEmail] = useState("");
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const router = useRouter();
+    const { login, isAuthenticated, loading: authLoading, error: authError } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+
+    // Redirigir si ya está autenticado
+    useEffect(() => {
+        if (isAuthenticated()) {
+            router.push('/dashboard');
+        }
+    }, [isAuthenticated, router]);
 
     const ref = useRef<HTMLDivElement>(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -74,23 +83,14 @@ export default function Login() {
         setIsLoading(true);
         setError("");
 
-        // simular error de credenciales incorrectas
-        if (email != "paulo@mail.com" || password != "paulo123") {
-            setError("Email o contraseña incorrectos. Por favor, intenta de nuevo.");
-            setIsLoading(false);
-            return;
-        }
-
-        
         try {
-            console.log("Datos de inicio de sesión:", { email, password });
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await login({ username, password });
 
-            router.push('/tickets');
-
-        } catch (err) {
-            setError("Email o contraseña incorrectos. Por favor, intenta de nuevo.");
-            console.error(err);
+            router.push('/dashboard');
+        } catch (err: any) {
+            const errorMessage = err?.response?.data?.message || "Usuario o contraseña incorrectos. Por favor, intenta de nuevo.";
+            setError(errorMessage);
+            console.error("Error en login:", err);
         } finally {
             setIsLoading(false);
         }
@@ -112,12 +112,12 @@ export default function Login() {
                         </motion.div>
                         <motion.div variants={staggerItemXPositive}>
                             <Input 
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                label="Email" 
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                label="Usuario" 
                                 labelPlacement="outside"
-                                type="email"
-                                placeholder="usuario@ejemplo.com"
+                                type="text"
+                                placeholder="tu_usuario"
                                 variant="faded" 
                                 startContent={<UserRound className="text-gray-500"/>}
                                 isRequired
@@ -146,15 +146,23 @@ export default function Login() {
                         {error && <motion.p variants={staggerItemXNegative} className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded-md">{error}</motion.p>}
 
                     </CardBody>
-                    <CardFooter className="flex flex-col items-center mt-10 overflow-hidden">
+                    <CardFooter className="flex flex-col items-center mt-10 overflow-hidden space-y-3">
                         <motion.div variants={staggerItemYPositive} className="w-full">
                             <Button 
                                 type="submit"
                                 className="rounded-xl bg-[#0e35bf] text-white w-full" 
-                                disabled={email === "" || password === "" || isLoading}
+                                disabled={username === "" || password === "" || isLoading}
                             >
                                 {isLoading ? <Spinner color="white" size="sm"/> : "Iniciar sesión"}
                             </Button>
+                        </motion.div>
+                        <motion.div variants={staggerItemYPositive} className="text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                ¿No tienes cuenta?{" "}
+                                <Link href="/register" className="text-[#0e35bf] font-semibold hover:underline">
+                                    Regístrate aquí
+                                </Link>
+                            </p>
                         </motion.div>
                     </CardFooter>
                 </form>

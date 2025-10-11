@@ -3,7 +3,7 @@ import axios from "axios";
 export const getApiWithToken = async () => {
   let api;
 
-  const token = localStorage.getItem("token");
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const headers: { [key: string]: string } = {
     "Content-Type": "application/json",

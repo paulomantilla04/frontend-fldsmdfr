@@ -17,6 +17,28 @@ import {
 
 export class TicketService {
 
+  async getTickets(): Promise<Ticket[]> {
+    try {
+      const apiAxios = await getApiWithToken();
+      const response = await apiAxios.get("/tickets");
+      return response.data;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  async getTicketById(id: number): Promise<Ticket> {
+    try {
+      const apiAxios = await getApiWithToken();
+      const response = await apiAxios.get(`/tickets/${id}`);
+      return response.data;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
   async createTicket(data: CreateTicket): Promise<Ticket> {
     try {
       const apiAxios = await getApiWithToken();
