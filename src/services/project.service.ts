@@ -1,5 +1,5 @@
 import { getApiWithToken } from "@/config/axios";
-import { Project, CreateProject } from "@/interfaces";
+import { Project, CreateProject, UpdateProject } from "@/interfaces";
 
 export class ProjectService {
   async createProject(data: CreateProject): Promise<Project> {
@@ -35,7 +35,7 @@ export class ProjectService {
     }
   }
 
-  async updateProject(id: number, data: Partial<Project>): Promise<Project> {
+  async updateProject(id: number, data: UpdateProject): Promise<Project> {
     try {
       const apiAxios = await getApiWithToken();
       const response = await apiAxios.put(`/projects/${id}`, data);
