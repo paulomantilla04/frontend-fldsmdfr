@@ -6,10 +6,12 @@ import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
 import { useTickets } from "@/hooks/useTickets";
 import { useTicketCatalogs } from "@/hooks/useTicketCatalogs";
+import { TicketService } from "@/services";
 import { Ticket, ArrowLeft, Upload, X, AlertCircle, CheckCircle } from "lucide-react";
 import { TicketTypeLabels, TicketPriorityLabels, TicketStatusLabels } from "@/interfaces";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ticketService = new TicketService();
 
 export default function CreateTicketPage() {
   const router = useRouter();
@@ -76,8 +78,20 @@ export default function CreateTicketPage() {
       console.log("Enviando ticket:", ticketData);
       
       // Crear ticket con estado "Abierto" automáticamente
-      await createTicket(ticketData);
-      setSuccessMessage("¡Ticket creado exitosamente! El estado inicial es 'Abierto'.");
+      const createdTicket = await createTicket(ticketData);
+      
+      // Si hay archivos, subirlos al ticket recién creado
+      if (files.length > 0 && createdTicket?.id) {
+        try {
+          await ticketService.uploadTicketFiles(createdTicket.id, files);
+          setSuccessMessage("¡Ticket creado exitosamente con archivos adjuntos!");
+        } catch (fileError) {
+          console.error("Error al subir archivos:", fileError);
+          setSuccessMessage("Ticket creado, pero hubo un error al subir algunos archivos.");
+        }
+      } else {
+        setSuccessMessage("¡Ticket creado exitosamente! El estado inicial es 'Abierto'.");
+      }
       
       // Redirigir después de 2 segundos
       setTimeout(() => {

@@ -43,7 +43,7 @@ export class TicketService {
     try {
       const apiAxios = await getApiWithToken();
       const response = await apiAxios.post("/createTicket", data);
-      return response.data;
+      return response.data.ticket; // Retornar solo el ticket
     } catch (error) {
       console.log(error);
       throw error;
@@ -96,8 +96,36 @@ export class TicketService {
   async addTicketFile(data: CreateTicketFile): Promise<TicketFile> {
     try {
       const apiAxios = await getApiWithToken();
-      const response = await apiAxios.post("/addTicketFile", data);
-      return response.data;
+      const formData = new FormData();
+      formData.append('files', data.file);
+      
+      const response = await apiAxios.post(`/tickets/${data.ticketId}/files`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.files[0];
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  async uploadTicketFiles(ticketId: number, files: File[]): Promise<TicketFile[]> {
+    try {
+      const apiAxios = await getApiWithToken();
+      const formData = new FormData();
+      
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+      
+      const response = await apiAxios.post(`/tickets/${ticketId}/files`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.files;
     } catch (error) {
       console.log(error);
       throw error;
@@ -177,6 +205,28 @@ export class TicketService {
       const apiAxios = await getApiWithToken();
       const response = await apiAxios.get("/ticket-status");
       return response.data;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  async assignTicket(ticketId: number, assignedToId: number): Promise<Ticket> {
+    try {
+      const apiAxios = await getApiWithToken();
+      const response = await apiAxios.put(`/tickets/${ticketId}/assign`, { assignedToId });
+      return response.data.ticket;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  async changeTicketStatus(ticketId: number, statusId: number): Promise<Ticket> {
+    try {
+      const apiAxios = await getApiWithToken();
+      const response = await apiAxios.put(`/tickets/${ticketId}/status`, { statusId });
+      return response.data.ticket;
     } catch (error) {
       console.log(error);
       throw error;

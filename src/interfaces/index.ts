@@ -106,6 +106,8 @@ export interface Ticket {
   type?: TicketType;
   priority?: TicketPriority;
   status?: TicketStatus;
+  createdBy?: User;
+  assignedTo?: User;
   startDate?: string;
   endDate?: string;
   raisedDate?: string;

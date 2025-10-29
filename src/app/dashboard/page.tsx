@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,7 @@ import { UserService, ProjectService } from "@/services";
 import { User, Project, TicketType, TicketPriority, TicketStatus } from "@/interfaces";
 import { AdminOnly, SupportOnly, StaffOnly, ClientOnly } from "@/components/RoleBased";
 import { Ticket, Users, Folder, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { motion, useInView, Variants } from "framer-motion";
 
 const userService = new UserService();
 const projectService = new ProjectService();
@@ -23,6 +24,32 @@ export default function DashboardPage() {
   const [ticketPriorities, setTicketPriorities] = useState<TicketPriority[]>([]);
   const [ticketStatuses, setTicketStatuses] = useState<TicketStatus[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const staggerContainer: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1,
+      }
+    }
+  };
+
+  const staggerItemYPositive: Variants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: [0.25, 0.1, 0.25, 1],
+      }
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -61,6 +88,15 @@ export default function DashboardPage() {
     }
   };
 
+  // Calcular estadísticas de usuarios por rol
+  const getUsersByRole = (roleName: string) => {
+    return users.filter((u) => u.role?.role === roleName).length;
+  };
+
+  const adminCount = getUsersByRole("Administrador");
+  const supportCount = getUsersByRole("Soporte");
+  const clientCount = getUsersByRole("Cliente");
+
   if (loading) {
     return (
       <ProtectedRoute>
@@ -77,16 +113,16 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar />
 
         <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
           {/* Bienvenida */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               ¡Bienvenido, {getUserFullName()}!
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
               Este es tu panel de control. Aquí puedes ver un resumen de todas
               tus actividades.
             </p>
@@ -95,13 +131,13 @@ export default function DashboardPage() {
           {/* Estadísticas - Vista según rol */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* Estadística para todos los roles */}
-            <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-blue-500">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     Tipos de Ticket
                   </p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
                     {ticketTypes.length}
                   </p>
                 </div>
@@ -109,13 +145,13 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-orange-500">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-orange-500">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     Prioridades
                   </p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
                     {ticketPriorities.length}
                   </p>
                 </div>
@@ -123,11 +159,13 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
+            <div
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-green-500"
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Estados</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Estados</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
                     {ticketStatuses.length}
                   </p>
                 </div>
@@ -137,13 +175,15 @@ export default function DashboardPage() {
 
             {/* Solo para Admin y Soporte */}
             <StaffOnly>
-              <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500">
+              <div
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-purple-500"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                       Usuarios
                     </p>
-                    <p className="text-3xl font-bold text-gray-900">
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
                       {users.length}
                     </p>
                   </div>
@@ -157,23 +197,41 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Panel para Administradores */}
             <AdminOnly>
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-bold mb-4 flex items-center">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <h2 className="text-xl font-bold mb-4 flex items-center text-gray-900 dark:text-white">
                   <Users className="w-5 h-5 mr-2 text-purple-600" />
                   Gestión de Usuarios
                 </h2>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Como administrador, tienes acceso completo al sistema.
                 </p>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <span className="text-sm font-medium">Total Usuarios</span>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Usuarios</span>
                     <span className="text-lg font-bold text-purple-600">
                       {users.length}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <span className="text-sm font-medium">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Administradores</span>
+                    <span className="text-lg font-bold text-purple-600">
+                      {adminCount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Soporte</span>
+                    <span className="text-lg font-bold text-blue-600">
+                      {supportCount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Clientes</span>
+                    <span className="text-lg font-bold text-green-600">
+                      {clientCount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Total Proyectos
                     </span>
                     <span className="text-lg font-bold text-purple-600">
@@ -186,18 +244,18 @@ export default function DashboardPage() {
 
             {/* Panel para Soporte */}
             <SupportOnly>
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-bold mb-4 flex items-center">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <h2 className="text-xl font-bold mb-4 flex items-center text-gray-900 dark:text-white">
                   <Ticket className="w-5 h-5 mr-2 text-blue-600" />
                   Panel de Soporte
                 </h2>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Como miembro del equipo de soporte, puedes gestionar tickets
                   y proyectos.
                 </p>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <span className="text-sm font-medium">Proyectos</span>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Proyectos</span>
                     <span className="text-lg font-bold text-blue-600">
                       {projects.length}
                     </span>
@@ -208,23 +266,26 @@ export default function DashboardPage() {
 
             {/* Panel para Clientes */}
             <ClientOnly>
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-bold mb-4 flex items-center">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <h2 className="text-xl font-bold mb-4 flex items-center text-gray-900 dark:text-white">
                   <Clock className="w-5 h-5 mr-2 text-green-600" />
                   Mis Tickets
                 </h2>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Aquí puedes ver y gestionar tus tickets.
                 </p>
-                <button className="w-full bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                <a
+                  href="/tickets"
+                  className="block w-full bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition text-center"
+                >
                   Ver Mis Tickets
-                </button>
+                </a>
               </div>
             </ClientOnly>
 
             {/* Accesos Rápidos */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-bold mb-4">Accesos Rápidos</h2>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Accesos Rápidos</h2>
               <div className="space-y-3">
                 <a
                   href="/tickets/create"
@@ -256,8 +317,8 @@ export default function DashboardPage() {
 
           {/* Lista de Proyectos - Solo para Staff */}
           <StaffOnly>
-            <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-bold mb-4 flex items-center">
+            <div className="mt-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-bold mb-4 flex items-center text-gray-900 dark:text-white">
                 <Folder className="w-5 h-5 mr-2 text-orange-600" />
                 Proyectos Recientes
               </h2>
@@ -266,19 +327,19 @@ export default function DashboardPage() {
                   {projects.slice(0, 6).map((project) => (
                     <div
                       key={project.id}
-                      className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition"
+                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition"
                     >
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
                         {project.name}
                       </h3>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         {project.description || "Sin descripción"}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
                   No hay proyectos disponibles
                 </p>
               )}

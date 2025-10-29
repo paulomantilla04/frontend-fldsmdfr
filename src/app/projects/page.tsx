@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navbar from "@/components/Navbar";
+import FormModal from "@/components/FormModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { ProjectService } from "@/services";
 import { Project } from "@/interfaces";
-import { Folder, Plus, Edit, Trash2, X, AlertCircle, CheckCircle } from "lucide-react";
+import { Folder, Plus, Edit, Trash2, AlertCircle, CheckCircle, Calendar } from "lucide-react";
+import { motion, useInView, Variants } from "framer-motion";
 
 const projectService = new ProjectService();
 
@@ -25,6 +28,37 @@ export default function ProjectsPage() {
   const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Diálogo de confirmación para eliminar
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const staggerContainer: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1,
+      }
+    }
+  };
+
+  const staggerItemYPositive: Variants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: [0.25, 0.1, 0.25, 1],
+      }
+    }
+  };
 
   useEffect(() => {
     loadProjects();
@@ -112,20 +146,32 @@ export default function ProjectsPage() {
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`¿Estás seguro de eliminar el proyecto "${name}"? Esta acción no se puede deshacer.`)) {
-      return;
+    const project = projects.find(p => p.id === id);
+    if (project) {
+      setProjectToDelete(project);
+      setShowDeleteDialog(true);
     }
+  };
 
+  const confirmDelete = async () => {
+    if (!projectToDelete) return;
+
+    setDeleting(true);
     try {
-      await projectService.deleteProject(id);
+      await projectService.deleteProject(projectToDelete.id);
       setSuccessMessage("Proyecto eliminado exitosamente");
       await loadProjects();
+      setShowDeleteDialog(false);
+      setProjectToDelete(null);
       
       setTimeout(() => {
         setSuccessMessage("");
       }, 3000);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Error al eliminar el proyecto");
+      setShowDeleteDialog(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -139,7 +185,7 @@ export default function ProjectsPage() {
           <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-                <Folder className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3 text-orange-600 flex-shrink-0" />
+                <Folder className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3 text-orange-600 shrink-0" />
                 <span>Proyectos</span>
               </h1>
               <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
@@ -158,7 +204,7 @@ export default function ProjectsPage() {
           {/* Success Message */}
           {successMessage && !showModal && (
             <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 rounded-lg flex items-start text-sm sm:text-base">
-              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 mt-0.5 shrink-0" />
               <span>{successMessage}</span>
             </div>
           )}
@@ -166,7 +212,7 @@ export default function ProjectsPage() {
           {/* Error */}
           {error && (
             <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg flex items-start text-sm sm:text-base">
-              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -216,7 +262,7 @@ export default function ProjectsPage() {
                       <div className="p-4 sm:p-6">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center flex-1 min-w-0">
-                            <div className="bg-orange-100 dark:bg-orange-900/30 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                            <div className="bg-orange-100 dark:bg-orange-900/30 p-2 sm:p-3 rounded-lg shrink-0">
                               <Folder className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
                             </div>
                             <div className="ml-3 min-w-0 flex-1">
@@ -279,109 +325,121 @@ export default function ProjectsPage() {
       </div>
 
       {/* Modal Crear/Editar Proyecto */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
-            <div className="p-4 sm:p-6">
-              {/* Encabezado del Modal */}
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                  {modalMode === "create" ? "Nuevo Proyecto" : "Editar Proyecto"}
-                </h3>
-                <button
-                  onClick={closeModal}
-                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                >
-                  ✕
-                </button>
-              </div>
+      <FormModal
+        open={showModal}
+        onClose={closeModal}
+        title={modalMode === "create" ? "Nuevo Proyecto" : "Editar Proyecto"}
+        maxWidth="md"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Success Message */}
+          {successMessage && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-sm">
+              <CheckCircle className="w-4 h-4 shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
 
-              {/* Formulario */}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Error Message */}
-                {formError && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>{formError}</span>
-                  </div>
-                )}
+          {/* Error Message */}
+          {formError && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
 
-                {/* Campo Nombre */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Nombre del Proyecto <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="Ej: Sistema de Tickets"
-                    required
-                    disabled={submitting}
-                  />
-                </div>
+          {/* Campo Nombre */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Nombre del Proyecto <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              placeholder="Ej: Sistema de Tickets"
+              required
+              disabled={submitting}
+            />
+          </div>
 
-                {/* Campo Fecha de Lanzamiento */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Fecha de Lanzamiento <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.launchDate}
-                    onChange={(e) => setFormData({ ...formData, launchDate: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    required
-                    disabled={submitting}
-                  />
-                </div>
-
-                {/* Campo Descripción */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Descripción
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
-                    placeholder="Describe el proyecto..."
-                    rows={4}
-                    disabled={submitting}
-                  />
-                </div>
-
-                {/* Botones */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="w-full sm:w-1/2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
-                    disabled={submitting}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="w-full sm:w-1/2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                    disabled={submitting}
-                  >
-                    {submitting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        {modalMode === "create" ? "Creando..." : "Guardando..."}
-                      </>
-                    ) : (
-                      <>{modalMode === "create" ? "Crear Proyecto" : "Guardar Cambios"}</>
-                    )}
-                  </button>
-                </div>
-              </form>
+          {/* Campo Fecha de Lanzamiento */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Fecha de Lanzamiento <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+              <input
+                type="date"
+                value={formData.launchDate}
+                onChange={(e) => setFormData({ ...formData, launchDate: e.target.value })}
+                className="w-full pl-11 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                required
+                disabled={submitting}
+              />
             </div>
           </div>
-        </div>
-      )}
+
+          {/* Campo Descripción */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Descripción
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
+              placeholder="Describe el proyecto..."
+              rows={4}
+              disabled={submitting}
+            />
+          </div>
+
+          {/* Botones */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="w-full sm:w-1/2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+              disabled={submitting}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="w-full sm:w-1/2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  {modalMode === "create" ? "Creando..." : "Guardando..."}
+                </>
+              ) : (
+                <>{modalMode === "create" ? "Crear Proyecto" : "Guardar Cambios"}</>
+              )}
+            </button>
+          </div>
+        </form>
+      </FormModal>
+
+      {/* Diálogo de Confirmación para Eliminar */}
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onClose={() => {
+          setShowDeleteDialog(false);
+          setProjectToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Eliminar Proyecto"
+        message={`¿Estás seguro de que deseas eliminar el proyecto "${projectToDelete?.name}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        type="danger"
+        loading={deleting}
+      />
     </ProtectedRoute>
   );
 }

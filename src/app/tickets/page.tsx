@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navbar from "@/components/Navbar";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { TicketService } from "@/services";
@@ -30,7 +31,7 @@ import {
   Tag,
   AlertTriangle
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useInView, Variants } from "framer-motion";
 
 const ticketService = new TicketService();
 
@@ -48,6 +49,40 @@ export default function TicketsPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [filterProject, setFilterProject] = useState<string>("all");
+
+  // Estado para diálogo de confirmación de eliminación
+  const [deleteDialog, setDeleteDialog] = useState({
+    isOpen: false,
+    ticketId: null as number | null,
+    ticketNumber: "",
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const staggerContainer: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1,
+      }
+    }
+  };
+
+  const staggerItemYPositive: Variants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: [0.25, 0.1, 0.25, 1],
+      }
+    }
+  };
 
   useEffect(() => {
     loadTickets();
@@ -75,6 +110,37 @@ export default function TicketsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteClick = (ticket: Ticket) => {
+    setDeleteDialog({
+      isOpen: true,
+      ticketId: ticket.id,
+      ticketNumber: `#${ticket.id}`,
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog.ticketId) return;
+
+    try {
+      setIsDeleting(true);
+      await ticketService.deleteTicket(deleteDialog.ticketId);
+      
+      // Actualizar la lista de tickets
+      setTickets(tickets.filter((t) => t.id !== deleteDialog.ticketId));
+      
+      setDeleteDialog({ isOpen: false, ticketId: null, ticketNumber: "" });
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Error al eliminar ticket");
+      console.error("Error al eliminar ticket:", err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialog({ isOpen: false, ticketId: null, ticketNumber: "" });
   };
 
   const applyFilters = () => {
@@ -174,7 +240,9 @@ export default function TicketsPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar />
 
-        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <main
+          className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8"
+        >
           {/* Header */}
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -203,7 +271,7 @@ export default function TicketsPage() {
           {/* Error */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg flex items-start">
-              <AlertCircle className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="w-5 h-5 mr-3 mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -333,10 +401,8 @@ export default function TicketsPage() {
           ) : (
             <div className="space-y-4">
               {filteredTickets.map((ticket) => (
-                <motion.div
+                <div
                   key={ticket.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
                   className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition overflow-hidden"
                 >
                   <div className="p-4 sm:p-6">
@@ -344,7 +410,7 @@ export default function TicketsPage() {
                       {/* Información principal */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-3 mb-3">
-                          <div className="flex-shrink-0">
+                          <div className="shrink-0">
                             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                               <TicketIcon className="w-5 h-5 text-blue-600" />
                             </div>
@@ -402,24 +468,48 @@ export default function TicketsPage() {
                         </button>
                         
                         {(isAdmin() || isSupport()) && (
-                          <button
-                            onClick={() => router.push(`/tickets/${ticket.id}/edit`)}
-                            className="flex-1 sm:flex-none px-4 py-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition font-medium text-sm flex items-center justify-center gap-2"
-                            title="Editar"
-                          >
-                            <Edit className="w-4 h-4" />
-                            <span className="sm:hidden">Editar</span>
-                          </button>
+                          <>
+                            <button
+                              onClick={() => router.push(`/tickets/${ticket.id}/edit`)}
+                              className="flex-1 sm:flex-none px-4 py-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition font-medium text-sm flex items-center justify-center gap-2"
+                              title="Editar"
+                            >
+                              <Edit className="w-4 h-4" />
+                              <span className="sm:hidden">Editar</span>
+                            </button>
+                            
+                            <button
+                              onClick={() => handleDeleteClick(ticket)}
+                              className="flex-1 sm:flex-none px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition font-medium text-sm flex items-center justify-center gap-2"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              <span className="sm:hidden">Eliminar</span>
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           )}
         </main>
       </div>
+
+      {/* Diálogo de confirmación de eliminación */}
+      <ConfirmDialog
+        open={deleteDialog.isOpen}
+        title="Eliminar Ticket"
+        message={`¿Estás seguro de que deseas eliminar el ticket ${deleteDialog.ticketNumber}? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        type="danger"
+        onConfirm={handleDeleteConfirm}
+        onClose={handleDeleteCancel}
+        loading={isDeleting}
+      />
     </ProtectedRoute>
   );
 }
