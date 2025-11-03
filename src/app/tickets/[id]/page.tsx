@@ -168,8 +168,8 @@ export default function TicketDetailPage() {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const getFileUrl = (filePath: string) => {
-    return `http://localhost:5000/uploads/tickets/${filePath}`;
+  const getFileDownloadUrl = (fileId: number) => {
+    return `http://localhost:5000/api/v1/files/${fileId}/download`;
   };
 
   const handleDelete = async () => {
@@ -662,7 +662,7 @@ export default function TicketDetailPage() {
                     {ticket.files.map((file) => (
                       <a
                         key={file.id}
-                        href={getFileUrl(file.filePath)}
+                        href={getFileDownloadUrl(file.id)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-between gap-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
@@ -671,10 +671,10 @@ export default function TicketDetailPage() {
                           <File className="w-5 h-5 text-blue-500 shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {file.tag || file.filePath}
+                              {file.tag || file.fileName}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {formatDate(file.createdAt)}
+                              {formatDate(file.createdAt)} • {(file.fileSize / 1024).toFixed(2)} KB
                             </p>
                           </div>
                         </div>

@@ -94,7 +94,9 @@ export interface TicketComment {
 export interface TicketFile {
   id: number;
   ticket?: Ticket;
-  filePath: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
   tag?: string;
   createdAt: string;
   updatedAt: string;
