@@ -139,7 +139,6 @@ export default function DashboardPage() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto"></div>
             <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Cargando dashboard...</p>
-            <p className="mt-2 text-sm text-gray-500">Usuario: {user ? user.first_name : "Esperando..."}</p>
           </div>
         </div>
       </ProtectedRoute>

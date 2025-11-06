@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "FLDSMDFR - Sistema de Tickets",
   description: "Sistema de gestión de tickets",
+  icons: {
+    icon: '/logo2.svg',
+  },
 }
 
 export default function RootLayout({

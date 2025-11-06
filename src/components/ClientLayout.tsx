@@ -6,6 +6,7 @@ import NotificationBell from '../components/NotificationBell';
 import { useSocket } from '../hooks/useSocket';
 import Link from 'next/link';
 import { Home, FileText, Shield, LogOut, Menu, X, Users, Folder, User as UserIcon } from 'lucide-react';
+import Image from 'next/image';
 import ConfirmDialog from './ConfirmDialog';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -14,8 +15,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const [user, setUser] = useState<any>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  
-  // Conectar WebSocket
+
   useSocket();
 
   useEffect(() => {
@@ -36,7 +36,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     router.push('/login');
   };
 
-  // No mostrar el header en login/register
   if (pathname === '/login' || pathname === '/register' || pathname === '/') {
     return <>{children}</>;
   }
@@ -55,12 +54,20 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
-                {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                {menuOpen ? <X className="w-6 h-6 text-gray-700 dark:text-gray-300" /> : <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />}
               </button>
-              <Link href="/dashboard" className="text-xl font-bold text-blue-600 dark:text-blue-500">
-                FLDSMDFR
+              
+              <Link href="/dashboard" className="flex items-center group">
+                <Image 
+                  src="/logo.svg" 
+                  alt="FLDSMDFR Logo" 
+                  width={120} 
+                  height={40}
+                  className="h-10 w-auto"
+                  priority
+                />
               </Link>
             </div>
 
