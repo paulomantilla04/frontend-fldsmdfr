@@ -177,11 +177,23 @@ export const TicketStatusLabels: Record<TicketStatusName, string> = {
   corrected: 'Corregido',
 };
 
+export interface ProjectFile {
+  id: number;
+  filename: string;
+  originalName: string;
+  mimetype: string;
+  size: number;
+  path: string;
+  projectId: number;
+  uploadedAt: string;
+}
+
 export interface Project {
   id: number;
   name: string;
   launchDate: string;
   description?: string;
+  files?: ProjectFile[];
   createdAt: string;
   updatedAt: string;
 }
