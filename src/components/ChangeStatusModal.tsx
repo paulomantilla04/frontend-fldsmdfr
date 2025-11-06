@@ -88,8 +88,24 @@ export default function ChangeStatusModal({
     }
 
     if (userRole === "Cliente") {
-      // Cliente solo puede cerrar tickets
-      return availableStatuses.filter((s) => s.name === "closed_client");
+      // Cliente puede cerrar tickets y rechazarlos si están cerrados por soporte
+      const allowedStatuses = ["closed_client"];
+      
+      console.log("🔍 DEBUG - Estado actual del ticket:", currentStatus?.name);
+      console.log("🔍 DEBUG - Rol del usuario:", userRole);
+      
+      // Si el ticket está cerrado por soporte, permitir "no_accepted"
+      if (currentStatus?.name === "closed_support") {
+        console.log("✅ DEBUG - Agregando 'not_accepted' a estados permitidos");
+        allowedStatuses.push("not_accepted");
+      }
+      
+      console.log("🔍 DEBUG - Estados permitidos para cliente:", allowedStatuses);
+      
+      const filtered = availableStatuses.filter((s) => allowedStatuses.includes(s.name));
+      console.log("🔍 DEBUG - Estados filtrados finales:", filtered.map(s => s.name));
+      
+      return filtered;
     }
 
     return [];
@@ -187,7 +203,13 @@ export default function ChangeStatusModal({
 
           {/* Info based on role */}
           <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-            {userRole === "Cliente" && (
+            {userRole === "Cliente" && currentStatus?.name === "closed_support" && (
+              <p>
+                ℹ️ Como cliente, puedes cerrar el ticket si estás satisfecho, o rechazarlo
+                si no cumple con lo solicitado. Al rechazar, el equipo será notificado.
+              </p>
+            )}
+            {userRole === "Cliente" && currentStatus?.name !== "closed_support" && (
               <p>
                 ℹ️ Como cliente, solo puedes cerrar tus tickets cuando estés
                 satisfecho con la solución.

@@ -344,117 +344,197 @@ export default function TicketsPage() {
           </div>
         )}
 
-        {/* Tabla de tickets */}
+        {/* Lista de tickets - Responsive */}
         {!loading && tickets.length > 0 && (
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-                <thead className="bg-gray-50 dark:bg-gray-900">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      #ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Proyecto
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Estado
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Prioridad
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Creado
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {tickets.map((ticket) => (
-                    <tr
-                      key={ticket.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
-                      onClick={() => router.push(`/tickets/${ticket.id}`)}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        #{ticket.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                        <div className="flex items-center gap-2">
-                          <Tag className="w-4 h-4 text-gray-400" />
-                          {TicketTypeLabels[ticket.type?.name as keyof typeof TicketTypeLabels] || ticket.type?.name}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                        <div className="flex items-center gap-2">
-                          <Folder className="w-4 h-4 text-gray-400" />
-                          {ticket.project?.name || "Sin proyecto"}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(ticket.status?.name || "")}
-                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(ticket.status?.name || "")}`}>
-                            {TicketStatusLabels[ticket.status?.name as keyof typeof TicketStatusLabels] || ticket.status?.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getPriorityBadge(ticket.priority?.name || "")}`}>
-                          {TicketPriorityLabels[ticket.priority?.name as keyof typeof TicketPriorityLabels] || "Normal"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          {new Date(ticket.createdAt).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => router.push(`/tickets/${ticket.id}`)}
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                            title="Ver detalles"
-                          >
-                            <Eye className="w-5 h-5" />
-                          </button>
-                          {isAdmin() && (
-                            <button
-                              onClick={() => setDeleteDialog({
-                                isOpen: true,
-                                ticketId: ticket.id,
-                                ticketNumber: `#${ticket.id}`,
-                              })}
-                              className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
-                              title="Eliminar ticket"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
+          <>
+            {/* Vista de tabla para escritorio */}
+            <div className="hidden md:block bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                  <thead className="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        #ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Tipo
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Proyecto
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Estado
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Prioridad
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Creado
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Acciones
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {tickets.map((ticket) => (
+                      <tr
+                        key={ticket.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
+                        onClick={() => router.push(`/tickets/${ticket.id}`)}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                          #{ticket.id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                          <div className="flex items-center gap-2">
+                            <Tag className="w-4 h-4 text-gray-400" />
+                            {TicketTypeLabels[ticket.type?.name as keyof typeof TicketTypeLabels] || ticket.type?.name}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                          <div className="flex items-center gap-2">
+                            <Folder className="w-4 h-4 text-gray-400" />
+                            {ticket.project?.name || "Sin proyecto"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(ticket.status?.name || "")}
+                            <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(ticket.status?.name || "")}`}>
+                              {TicketStatusLabels[ticket.status?.name as keyof typeof TicketStatusLabels] || ticket.status?.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs rounded-full ${getPriorityBadge(ticket.priority?.name || "")}`}>
+                            {TicketPriorityLabels[ticket.priority?.name as keyof typeof TicketPriorityLabels] || "Normal"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-gray-400" />
+                            {new Date(ticket.createdAt).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => router.push(`/tickets/${ticket.id}`)}
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                              title="Ver detalles"
+                            >
+                              <Eye className="w-5 h-5" />
+                            </button>
+                            {isAdmin() && (
+                              <button
+                                onClick={() => setDeleteDialog({
+                                  isOpen: true,
+                                  ticketId: ticket.id,
+                                  ticketNumber: `#${ticket.id}`,
+                                })}
+                                className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                                title="Eliminar ticket"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            {/* Paginación */}
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              totalItems={totalTickets}
-              itemsPerPage={itemsPerPage}
-              loading={loading}
-            />
-          </div>
+            {/* Vista de cards para móvil */}
+            <div className="md:hidden space-y-4">
+              {tickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  onClick={() => router.push(`/tickets/${ticket.id}`)}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition cursor-pointer"
+                >
+                  {/* Header del card */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">
+                        Ticket #{ticket.id}
+                      </span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Tag className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {TicketTypeLabels[ticket.type?.name as keyof typeof TicketTypeLabels] || ticket.type?.name}
+                        </span>
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded-full shrink-0 ${getPriorityBadge(ticket.priority?.name || "")}`}>
+                      {TicketPriorityLabels[ticket.priority?.name as keyof typeof TicketPriorityLabels] || "Normal"}
+                    </span>
+                  </div>
+
+                  {/* Proyecto */}
+                  {ticket.project && (
+                    <div className="flex items-center gap-2 mb-2 text-sm text-gray-700 dark:text-gray-300">
+                      <Folder className="w-4 h-4 text-gray-400" />
+                      <span>{ticket.project.name}</span>
+                    </div>
+                  )}
+
+                  {/* Estado */}
+                  <div className="flex items-center gap-2 mb-3">
+                    {getStatusIcon(ticket.status?.name || "")}
+                    <span className={`px-3 py-1 text-xs rounded-full ${getStatusBadge(ticket.status?.name || "")}`}>
+                      {TicketStatusLabels[ticket.status?.name as keyof typeof TicketStatusLabels] || ticket.status?.name}
+                    </span>
+                  </div>
+
+                  {/* Footer del card */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <Calendar className="w-4 h-4" />
+                      <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => router.push(`/tickets/${ticket.id}`)}
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        title="Ver detalles"
+                      >
+                        <Eye className="w-5 h-5" />
+                      </button>
+                      {isAdmin() && (
+                        <button
+                          onClick={() => setDeleteDialog({
+                            isOpen: true,
+                            ticketId: ticket.id,
+                            ticketNumber: `#${ticket.id}`,
+                          })}
+                          className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                          title="Eliminar ticket"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Paginación compartida */}
+            <div className="mt-6">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                totalItems={totalTickets}
+                itemsPerPage={itemsPerPage}
+                loading={loading}
+              />
+            </div>
+          </>
         )}
 
         {/* Sin resultados */}

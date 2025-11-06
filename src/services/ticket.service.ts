@@ -270,4 +270,34 @@ export class TicketService {
       throw error;
     }
   }
+
+  async downloadTicketFile(fileId: number): Promise<Blob> {
+    try {
+      const apiAxios = await getApiWithToken();
+      const response = await apiAxios.get(
+        `/files/${fileId}/download`,
+        { 
+          responseType: 'blob',
+          headers: {
+            'Accept': 'application/octet-stream'
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  async rejectTicket(id: number, reason: string): Promise<{ message: string; ticket: Ticket }> {
+    try {
+      const apiAxios = await getApiWithToken();
+      const response = await apiAxios.post(`/tickets/${id}/reject`, { reason });
+      return response.data;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
 }

@@ -65,6 +65,10 @@ export default function TicketDetailPage() {
   const [assigning, setAssigning] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
+  
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejecting, setRejecting] = useState(false);
 
   const [availableStatuses, setAvailableStatuses] = useState<any[]>([]);
 
@@ -165,8 +169,21 @@ export default function TicketDetailPage() {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const getFileDownloadUrl = (fileId: number) => {
-    return `http://localhost:5000/api/v1/files/${fileId}/download`;
+  const handleDownloadFile = async (fileId: number, fileName: string) => {
+    try {
+      const blob = await ticketService.downloadTicketFile(fileId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error al descargar archivo:', error);
+      alert('Error al descargar el archivo');
+    }
   };
 
   const handleDelete = async () => {
@@ -204,6 +221,27 @@ export default function TicketDetailPage() {
       alert(err?.response?.data?.message || "Error al cambiar estado");
     } finally {
       setChangingStatus(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      alert("Por favor indica la razón del rechazo");
+      return;
+    }
+
+    try {
+      setRejecting(true);
+      await ticketService.rejectTicket(ticketId, rejectReason);
+      await loadTicket();
+      await loadComments(); // Recargar comentarios para ver el comentario automático
+      setShowRejectDialog(false);
+      setRejectReason("");
+      alert("Ticket rechazado exitosamente. El equipo será notificado.");
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "Error al rechazar ticket");
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -345,23 +383,37 @@ export default function TicketDetailPage() {
 
               {/* Botones de acción */}
               <div className="flex flex-wrap gap-2">
+                {/* Botón rechazar - Solo para clientes cuando el ticket está cerrado por soporte */}
+                {isClient() && ticket.status?.name === 'closed_support' && (
+                  <button
+                    onClick={() => setShowRejectDialog(true)}
+                    className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm sm:text-base whitespace-nowrap"
+                  >
+                    <X className="w-4 h-4" />
+                    <span className="hidden sm:inline">Rechazar Ticket</span>
+                    <span className="sm:hidden">Rechazar</span>
+                  </button>
+                )}
+
                 {/* Botón cambiar estado - Todos los usuarios */}
                 <button
                   onClick={() => setShowStatusModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                  className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm sm:text-base whitespace-nowrap"
                 >
                   <CheckCircle className="w-4 h-4" />
-                  Cambiar Estado
+                  <span className="hidden sm:inline">Cambiar Estado</span>
+                  <span className="sm:hidden">Estado</span>
                 </button>
 
                 {/* Botón asignar - Solo Admin y Soporte */}
                 {(isAdmin() || isSupport()) && (
                   <button
                     onClick={() => setShowAssignModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                    className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm sm:text-base whitespace-nowrap"
                   >
                     <UserIcon className="w-4 h-4" />
-                    {ticket.assignedTo ? "Reasignar" : "Asignar"}
+                    <span className="hidden sm:inline">{ticket.assignedTo ? "Reasignar" : "Asignar"}</span>
+                    <span className="sm:hidden">Asignar</span>
                   </button>
                 )}
 
@@ -369,10 +421,11 @@ export default function TicketDetailPage() {
                 {(isAdmin() || isSupport()) && (
                   <button
                     onClick={() => router.push(`/tickets/${ticket.id}/edit`)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm sm:text-base whitespace-nowrap"
                   >
                     <Edit className="w-4 h-4" />
-                    Editar
+                    <span className="hidden sm:inline">Editar</span>
+                    <span className="sm:hidden">Editar</span>
                   </button>
                 )}
 
@@ -380,10 +433,11 @@ export default function TicketDetailPage() {
                 {(isAdmin() || isSupport()) && (
                   <button
                     onClick={() => setShowDeleteDialog(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                    className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm sm:text-base whitespace-nowrap"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Eliminar
+                    <span className="hidden sm:inline">Eliminar</span>
+                    <span className="sm:hidden">Eliminar</span>
                   </button>
                 )}
               </div>
@@ -648,16 +702,14 @@ export default function TicketDetailPage() {
                   </h2>
                   <div className="space-y-2">
                     {ticket.files.map((file) => (
-                      <a
+                      <button
                         key={file.id}
-                        href={getFileDownloadUrl(file.id)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-between gap-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
+                        onClick={() => handleDownloadFile(file.id, file.fileName)}
+                        className="w-full flex items-center justify-between gap-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
                       >
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <File className="w-5 h-5 text-blue-500 shrink-0" />
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 text-left">
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                               {file.tag || file.fileName}
                             </p>
@@ -667,7 +719,7 @@ export default function TicketDetailPage() {
                           </div>
                         </div>
                         <Download className="w-4 h-4 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 shrink-0" />
-                      </a>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -711,6 +763,57 @@ export default function TicketDetailPage() {
         loading={changingStatus}
         userRole={user?.role?.role || null}
       />
+
+      {/* Diálogo de rechazo de ticket */}
+      {showRejectDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Rechazar Ticket
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Si el ticket no cumple con lo solicitado o no ha quedado totalmente resuelto, 
+              puedes rechazarlo indicando la razón. El equipo será notificado y podrá trabajar en las correcciones necesarias.
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Describe por qué rechazas este ticket..."
+              rows={4}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none mb-4"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowRejectDialog(false);
+                  setRejectReason("");
+                }}
+                disabled={rejecting}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleReject}
+                disabled={rejecting || !rejectReason.trim()}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {rejecting ? (
+                  <>
+                    <Loader className="w-4 h-4 animate-spin" />
+                    Rechazando...
+                  </>
+                ) : (
+                  <>
+                    <X className="w-4 h-4" />
+                    Rechazar Ticket
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   );
 }
