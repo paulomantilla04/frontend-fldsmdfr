@@ -36,14 +36,12 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("Dashboard - Usuario:", user);
     if (user) {
       loadData();
     } else {
       // Si no hay usuario después de 2 segundos, intentar de todas formas
       const timeout = setTimeout(() => {
         if (!user) {
-          console.log("No hay usuario después de 2s, intentando cargar datos...");
           loadDataWithoutUser();
         }
       }, 2000);
@@ -57,9 +55,7 @@ export default function DashboardPage() {
     try {
       const ticketsData = await ticketService.getTickets();
       setTickets(ticketsData || []);
-      console.log("Tickets cargados:", ticketsData?.length);
     } catch (error: any) {
-      console.error("Error cargando tickets:", error);
       setError("Error al cargar tickets");
     } finally {
       setLoading(false);
@@ -68,12 +64,10 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     if (!user) {
-      console.log("loadData: No hay usuario");
       setLoading(false);
       return;
     }
     
-    console.log("loadData: Iniciando carga para rol:", user.role?.role);
     setLoading(true);
     setError(null);
     
@@ -84,7 +78,6 @@ export default function DashboardPage() {
 
       const userRole = user.role?.role;
       if (userRole === "Administrador" || userRole === "Soporte") {
-        console.log("Cargando usuarios y proyectos para:", userRole);
         promises.push(
           userService.getUsers(),
           projectService.getProjects()
@@ -92,7 +85,6 @@ export default function DashboardPage() {
       }
 
       const results = await Promise.all(promises);
-      console.log("Resultados:", results.map(r => Array.isArray(r) ? r.length : r));
 
       setTickets(results[0] || []);
       if (results.length > 1) {
@@ -130,7 +122,6 @@ export default function DashboardPage() {
   const supportCount = users.filter(u => u.role?.role === "Soporte").length;
   const clientCount = users.filter(u => u.role?.role === "Cliente").length;
 
-  console.log("Renderizando dashboard:", { loading, userRole, totalTickets, error });
 
   if (loading) {
     return (
