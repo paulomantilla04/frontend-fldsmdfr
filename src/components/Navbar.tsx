@@ -3,18 +3,29 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, Menu, X, Home, Ticket, Users, Folder, Settings } from "lucide-react";
+import { LogOut, Menu, X, Home, Ticket, Users, Folder, User } from "lucide-react";
 import { useState } from "react";
 import { AdminOnly, SupportOnly, StaffOnly } from "@/components/RoleBased";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function Navbar() {
   const { user, logout, getUserFullName, isAdmin, isSupport, isClient } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleLogoutConfirm = () => {
     logout();
+    setShowLogoutDialog(false);
     router.push("/login");
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutDialog(false);
   };
 
   const getRoleBadgeColor = () => {
@@ -33,7 +44,7 @@ export default function Navbar() {
             <Link href="/dashboard" className="flex items-center space-x-2">
               <Ticket className="w-8 h-8 text-blue-600" />
               <span className="text-xl font-bold text-gray-900">
-                Sistema de Tickets
+                FLDSMDFR
               </span>
             </Link>
 
@@ -65,6 +76,14 @@ export default function Navbar() {
                 </Link>
               </StaffOnly>
 
+              <Link
+                href="/profile"
+                className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+              >
+                <User className="w-4 h-4 mr-1" />
+                Perfil
+              </Link>
+
               <AdminOnly>
                 <Link
                   href="/users"
@@ -72,14 +91,6 @@ export default function Navbar() {
                 >
                   <Users className="w-4 h-4 mr-1" />
                   Usuarios
-                </Link>
-
-                <Link
-                  href="/settings"
-                  className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                >
-                  <Settings className="w-4 h-4 mr-1" />
-                  Configuración
                 </Link>
               </AdminOnly>
             </div>
@@ -102,7 +113,7 @@ export default function Navbar() {
             </div>
 
             <button
-              onClick={handleLogout}
+              onClick={handleLogoutClick}
               className="hidden md:flex items-center px-4 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition"
             >
               <LogOut className="w-4 h-4 mr-2" />
@@ -170,6 +181,15 @@ export default function Navbar() {
               </Link>
             </StaffOnly>
 
+            <Link
+              href="/profile"
+              className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <User className="w-5 h-5 mr-3" />
+              Perfil
+            </Link>
+
             <AdminOnly>
               <Link
                 href="/users"
@@ -179,19 +199,10 @@ export default function Navbar() {
                 <Users className="w-5 h-5 mr-3" />
                 Usuarios
               </Link>
-
-              <Link
-                href="/settings"
-                className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Settings className="w-5 h-5 mr-3" />
-                Configuración
-              </Link>
             </AdminOnly>
 
             <button
-              onClick={handleLogout}
+              onClick={handleLogoutClick}
               className="w-full flex items-center px-3 py-2 rounded-md text-base font-medium text-white bg-red-600 hover:bg-red-700 mt-4"
             >
               <LogOut className="w-5 h-5 mr-3" />
@@ -200,6 +211,18 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* Diálogo de confirmación de logout */}
+      <ConfirmDialog
+        open={showLogoutDialog}
+        title="Cerrar Sesión"
+        message="¿Estás seguro de que deseas cerrar sesión?"
+        confirmText="Cerrar Sesión"
+        cancelText="Cancelar"
+        type="warning"
+        onConfirm={handleLogoutConfirm}
+        onClose={handleLogoutCancel}
+      />
     </nav>
   );
 }
