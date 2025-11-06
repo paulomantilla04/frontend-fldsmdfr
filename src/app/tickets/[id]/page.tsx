@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Navbar from "@/components/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { TicketService } from "@/services";
 import { 
@@ -39,6 +38,7 @@ import {
 import ConfirmDialog from "@/components/ConfirmDialog";
 import AssignTicketModal from "@/components/AssignTicketModal";
 import ChangeStatusModal from "@/components/ChangeStatusModal";
+import TicketHistoryPanel from "@/components/TicketHistoryPanel";
 
 const ticketService = new TicketService();
 
@@ -53,14 +53,12 @@ export default function TicketDetailPage() {
   const [comments, setComments] = useState<TicketComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
-  // Estado para comentarios
+
   const [newComment, setNewComment] = useState("");
   const [addingComment, setAddingComment] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
-  
-  // Estado para diálogos
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -68,7 +66,6 @@ export default function TicketDetailPage() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
 
-  // Estados disponibles (se cargarán desde el backend)
   const [availableStatuses, setAvailableStatuses] = useState<any[]>([]);
 
   useEffect(() => {
@@ -137,7 +134,7 @@ export default function TicketDetailPage() {
 
       setNewComment("");
       await loadComments();
-      await loadTicket(); // Recargar ticket para actualizar la lista de archivos
+      await loadTicket();
     } catch (err: any) {
       console.error("Error al agregar comentario o archivos:", err);
       alert("Error al agregar comentario o archivos");
@@ -188,7 +185,7 @@ export default function TicketDetailPage() {
     try {
       setAssigning(true);
       await ticketService.assignTicket(ticketId, userId);
-      await loadTicket(); // Recargar ticket para ver el cambio
+      await loadTicket();
       setShowAssignModal(false);
     } catch (err: any) {
       alert(err?.response?.data?.message || "Error al asignar ticket");
@@ -201,7 +198,7 @@ export default function TicketDetailPage() {
     try {
       setChangingStatus(true);
       await ticketService.changeTicketStatus(ticketId, statusId);
-      await loadTicket(); // Recargar ticket para ver el cambio
+      await loadTicket();
       setShowStatusModal(false);
     } catch (err: any) {
       alert(err?.response?.data?.message || "Error al cambiar estado");
@@ -288,13 +285,10 @@ export default function TicketDetailPage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <Navbar />
-          <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
-            <div className="text-center">
-              <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">Cargando ticket...</p>
-            </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+          <div className="text-center">
+            <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-400">Cargando ticket...</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -304,18 +298,15 @@ export default function TicketDetailPage() {
   if (error || !ticket) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <Navbar />
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg p-6">
-              <p className="font-medium">{error || "Ticket no encontrado"}</p>
-              <button
-                onClick={() => router.push("/tickets")}
-                className="mt-4 text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Volver a tickets
-              </button>
-            </div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg p-6">
+            <p className="font-medium">{error || "Ticket no encontrado"}</p>
+            <button
+              onClick={() => router.push("/tickets")}
+              className="mt-4 text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Volver a tickets
+            </button>
           </div>
         </div>
       </ProtectedRoute>
@@ -324,12 +315,9 @@ export default function TicketDetailPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navbar />
-        
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          {/* Header */}
-          <div className="mb-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Header */}
+        <div className="mb-6">
             <button
               onClick={() => router.push("/tickets")}
               className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4"
@@ -427,7 +415,7 @@ export default function TicketDetailPage() {
                 <div className="space-y-4 mb-6">
                   {comments.length === 0 ? (
                     <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                      No hay comentarios aún
+                      No hay comentarios
                     </p>
                   ) : (
                     comments.map((comment) => (
@@ -684,12 +672,14 @@ export default function TicketDetailPage() {
                   </div>
                 </div>
               )}
+
+              {/* Panel de Historial */}
+              <TicketHistoryPanel ticketId={ticketId} />
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Diálogo de confirmación de eliminación */}
+        {/* Diálogo de confirmación de eliminación */}
       <ConfirmDialog
         open={showDeleteDialog}
         onClose={() => setShowDeleteDialog(false)}

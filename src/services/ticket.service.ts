@@ -15,12 +15,50 @@ import {
   CreateTicketStatus,
 } from "@/interfaces";
 
+export interface PaginatedTicketsResponse {
+  tickets: Ticket[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export class TicketService {
 
   async getTickets(): Promise<Ticket[]> {
     try {
       const apiAxios = await getApiWithToken();
       const response = await apiAxios.get("/tickets");
+      return response.data;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  async getTicketsPaginated(
+    page: number = 1, 
+    limit: number = 50,
+    filters?: {
+      search?: string;
+      status?: string;
+      priority?: string;
+      project?: string;
+    }
+  ): Promise<PaginatedTicketsResponse> {
+    try {
+      const apiAxios = await getApiWithToken();
+      const params = new URLSearchParams();
+      
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+      
+      if (filters?.search) params.append('search', filters.search);
+      if (filters?.status && filters.status !== 'all') params.append('status', filters.status);
+      if (filters?.priority && filters.priority !== 'all') params.append('priority', filters.priority);
+      if (filters?.project && filters.project !== 'all') params.append('project', filters.project);
+      
+      const response = await apiAxios.get(`/tickets/paginated?${params.toString()}`);
       return response.data;
     } catch (error) {
       console.log(error);
@@ -43,7 +81,7 @@ export class TicketService {
     try {
       const apiAxios = await getApiWithToken();
       const response = await apiAxios.post("/createTicket", data);
-      return response.data.ticket; // Retornar solo el ticket
+      return response.data.ticket;
     } catch (error) {
       console.log(error);
       throw error;

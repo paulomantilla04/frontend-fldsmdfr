@@ -1,70 +1,90 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Navbar from "@/components/Navbar";
 import { useAuth } from "@/hooks/useAuth";
-import { useTickets } from "@/hooks/useTickets";
-import { UserService, ProjectService } from "@/services";
-import { User, Project, TicketType, TicketPriority, TicketStatus } from "@/interfaces";
-import { AdminOnly, SupportOnly, StaffOnly, ClientOnly } from "@/components/RoleBased";
-import { Ticket, Users, Folder, AlertCircle, CheckCircle, Clock } from "lucide-react";
-import { motion, useInView, Variants } from "framer-motion";
+import { TicketService, UserService, ProjectService } from "@/services";
+import { Ticket, User, Project } from "@/interfaces";
+import { 
+  Ticket as TicketIcon, 
+  Users, 
+  Folder, 
+  AlertCircle, 
+  CheckCircle, 
+  Clock,
+  TrendingUp,
+  Activity,
+  FileText,
+  UserCheck,
+  AlertTriangle,
+  Zap,
+  BarChart3
+} from "lucide-react";
+import Link from "next/link";
 
+const ticketService = new TicketService();
 const userService = new UserService();
 const projectService = new ProjectService();
 
 export default function DashboardPage() {
-  const { user, getUserFullName, isAdmin, isSupport, isClient } = useAuth();
-  const { getTicketTypes, getTicketPriorities, getTicketStatuses } = useTickets();
+  const { user, getUserFullName } = useAuth();
 
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
-  const [ticketPriorities, setTicketPriorities] = useState<TicketPriority[]>([]);
-  const [ticketStatuses, setTicketStatuses] = useState<TicketStatus[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const staggerContainer: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.1,
-      }
-    }
-  };
-
-  const staggerItemYPositive: Variants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: [0.25, 0.1, 0.25, 1],
-      }
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    console.log("Dashboard - Usuario:", user);
+    if (user) {
+      loadData();
+    } else {
+      // Si no hay usuario después de 2 segundos, intentar de todas formas
+      const timeout = setTimeout(() => {
+        if (!user) {
+          console.log("No hay usuario después de 2s, intentando cargar datos...");
+          loadDataWithoutUser();
+        }
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [user]);
+
+  const loadDataWithoutUser = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const ticketsData = await ticketService.getTickets();
+      setTickets(ticketsData || []);
+      console.log("Tickets cargados:", ticketsData?.length);
+    } catch (error: any) {
+      console.error("Error cargando tickets:", error);
+      setError("Error al cargar tickets");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadData = async () => {
+    if (!user) {
+      console.log("loadData: No hay usuario");
+      setLoading(false);
+      return;
+    }
+    
+    console.log("loadData: Iniciando carga para rol:", user.role?.role);
     setLoading(true);
+    setError(null);
+    
     try {
       const promises: Promise<any>[] = [
-        getTicketTypes(),
-        getTicketPriorities(),
-        getTicketStatuses(),
+        ticketService.getTickets(),
       ];
 
-      if (isAdmin() || isSupport()) {
+      const userRole = user.role?.role;
+      if (userRole === "Administrador" || userRole === "Soporte") {
+        console.log("Cargando usuarios y proyectos para:", userRole);
         promises.push(
           userService.getUsers(),
           projectService.getProjects()
@@ -72,39 +92,54 @@ export default function DashboardPage() {
       }
 
       const results = await Promise.all(promises);
+      console.log("Resultados:", results.map(r => Array.isArray(r) ? r.length : r));
 
-      setTicketTypes(results[0]);
-      setTicketPriorities(results[1]);
-      setTicketStatuses(results[2]);
-
-      if (results.length > 3) {
-        setUsers(results[3] || []);
-        setProjects(results[4] || []);
+      setTickets(results[0] || []);
+      if (results.length > 1) {
+        setUsers(results[1] || []);
+        setProjects(results[2] || []);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error cargando datos:", error);
+      setError(error?.response?.data?.message || "Error al cargar los datos");
+      
+      if (error?.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Calcular estadísticas de usuarios por rol
-  const getUsersByRole = (roleName: string) => {
-    return users.filter((u) => u.role?.role === roleName).length;
-  };
+  // Calcular estadísticas
+  const userRole = user?.role?.role;
+  const pendingTickets = tickets.filter(t => t.status?.name === "pending").length;
+  const inProgressTickets = tickets.filter(t => t.status?.name === "in_progress").length;
+  const resolvedTickets = tickets.filter(t => 
+    t.status?.name === "closed_support" || t.status?.name === "closed_client"
+  ).length;
+  const totalTickets = tickets.length;
 
-  const adminCount = getUsersByRole("Administrador");
-  const supportCount = getUsersByRole("Soporte");
-  const clientCount = getUsersByRole("Cliente");
+  const myTickets = userRole === "Cliente" ? tickets.filter(t => t.createdBy?.id === user?.id) : [];
+  const myPendingTickets = myTickets.filter(t => t.status?.name === "pending").length;
+  const myInProgressTickets = myTickets.filter(t => t.status?.name === "in_progress").length;
+
+  const adminCount = users.filter(u => u.role?.role === "Administrador").length;
+  const supportCount = users.filter(u => u.role?.role === "Soporte").length;
+  const clientCount = users.filter(u => u.role?.role === "Cliente").length;
+
+  console.log("Renderizando dashboard:", { loading, userRole, totalTickets, error });
 
   if (loading) {
     return (
       <ProtectedRoute>
-        <Navbar />
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Cargando dashboard...</p>
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Cargando dashboard...</p>
+            <p className="mt-2 text-sm text-gray-500">Usuario: {user ? user.first_name : "Esperando..."}</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -113,240 +148,146 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navbar />
+      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            ¡Bienvenido, {getUserFullName() || "Usuario"}!
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Panel de control - Rol: {userRole || "Sin rol"}
+          </p>
+        </div>
 
-        <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          {/* Bienvenida */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              ¡Bienvenido, {getUserFullName()}!
-            </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Este es tu panel de control. Aquí puedes ver un resumen de todas
-              tus actividades.
-            </p>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+              <AlertCircle className="w-5 h-5" />
+              <p>{error}</p>
+            </div>
           </div>
+        )}
 
-          {/* Estadísticas - Vista según rol */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Estadística para todos los roles */}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Total Tickets - Admin/Soporte */}
+          {(userRole === "Administrador" || userRole === "Soporte") && (
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-purple-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Total Tickets
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                    {totalTickets}
+                  </p>
+                </div>
+                <TicketIcon className="w-12 h-12 text-purple-500" />
+              </div>
+            </div>
+          )}
+
+          {/* Mis Tickets - Cliente */}
+          {userRole === "Cliente" && (
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-blue-500">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Tipos de Ticket
+                    Mis Tickets
                   </p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {ticketTypes.length}
+                    {myTickets.length}
                   </p>
                 </div>
-                <Ticket className="w-12 h-12 text-blue-500" />
+                <FileText className="w-12 h-12 text-blue-500" />
               </div>
             </div>
+          )}
 
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-orange-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Prioridades
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {ticketPriorities.length}
-                  </p>
-                </div>
-                <AlertCircle className="w-12 h-12 text-orange-500" />
+          {/* Pendientes */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Pendientes
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {userRole === "Cliente" ? myPendingTickets : pendingTickets}
+                </p>
               </div>
+              <Clock className="w-12 h-12 text-yellow-500" />
             </div>
-
-            <div
-              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-green-500"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Estados</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {ticketStatuses.length}
-                  </p>
-                </div>
-                <CheckCircle className="w-12 h-12 text-green-500" />
-              </div>
-            </div>
-
-            {/* Solo para Admin y Soporte */}
-            <StaffOnly>
-              <div
-                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-purple-500"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Usuarios
-                    </p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {users.length}
-                    </p>
-                  </div>
-                  <Users className="w-12 h-12 text-purple-500" />
-                </div>
-              </div>
-            </StaffOnly>
           </div>
 
-          {/* Contenido específico por rol */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Panel para Administradores */}
-            <AdminOnly>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-bold mb-4 flex items-center text-gray-900 dark:text-white">
-                  <Users className="w-5 h-5 mr-2 text-purple-600" />
-                  Gestión de Usuarios
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Como administrador, tienes acceso completo al sistema.
+          {/* En Progreso */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  En Progreso
                 </p>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Usuarios</span>
-                    <span className="text-lg font-bold text-purple-600">
-                      {users.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Administradores</span>
-                    <span className="text-lg font-bold text-purple-600">
-                      {adminCount}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Soporte</span>
-                    <span className="text-lg font-bold text-blue-600">
-                      {supportCount}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Clientes</span>
-                    <span className="text-lg font-bold text-green-600">
-                      {clientCount}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Total Proyectos
-                    </span>
-                    <span className="text-lg font-bold text-purple-600">
-                      {projects.length}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </AdminOnly>
-
-            {/* Panel para Soporte */}
-            <SupportOnly>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-bold mb-4 flex items-center text-gray-900 dark:text-white">
-                  <Ticket className="w-5 h-5 mr-2 text-blue-600" />
-                  Panel de Soporte
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Como miembro del equipo de soporte, puedes gestionar tickets
-                  y proyectos.
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {userRole === "Cliente" ? myInProgressTickets : inProgressTickets}
                 </p>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Proyectos</span>
-                    <span className="text-lg font-bold text-blue-600">
-                      {projects.length}
-                    </span>
-                  </div>
-                </div>
               </div>
-            </SupportOnly>
+              <TrendingUp className="w-12 h-12 text-blue-500" />
+            </div>
+          </div>
 
-            {/* Panel para Clientes */}
-            <ClientOnly>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-bold mb-4 flex items-center text-gray-900 dark:text-white">
-                  <Clock className="w-5 h-5 mr-2 text-green-600" />
-                  Mis Tickets
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Aquí puedes ver y gestionar tus tickets.
+          {/* Resueltos */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-green-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Resueltos
                 </p>
-                <a
-                  href="/tickets"
-                  className="block w-full bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition text-center"
-                >
-                  Ver Mis Tickets
-                </a>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {resolvedTickets}
+                </p>
               </div>
-            </ClientOnly>
+              <CheckCircle className="w-12 h-12 text-green-500" />
+            </div>
+          </div>
+        </div>
 
-            {/* Accesos Rápidos */}
+        {/* Estadísticas del Sistema - Solo Admin/Soporte */}
+        {(userRole === "Administrador" || userRole === "Soporte") && users.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Accesos Rápidos</h2>
-              <div className="space-y-3">
-                <a
-                  href="/tickets/create"
-                  className="block w-full bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600 transition text-center font-medium"
-                >
-                  Crear Nuevo Ticket
-                </a>
-
-                <StaffOnly>
-                  <a
-                    href="/projects"
-                    className="block w-full bg-purple-500 text-white px-4 py-3 rounded-lg hover:bg-purple-600 transition text-center font-medium"
-                  >
-                    Ver Proyectos
-                  </a>
-                </StaffOnly>
-
-                <AdminOnly>
-                  <a
-                    href="/users"
-                    className="block w-full bg-indigo-500 text-white px-4 py-3 rounded-lg hover:bg-indigo-600 transition text-center font-medium"
-                  >
-                    Gestionar Usuarios
-                  </a>
-                </AdminOnly>
+              <div className="flex items-center gap-3 mb-2">
+                <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Usuarios</h3>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{users.length}</p>
+              <div className="mt-3 space-y-1 text-sm">
+                <p className="text-gray-600 dark:text-gray-400">Administradores: {adminCount}</p>
+                <p className="text-gray-600 dark:text-gray-400">Soporte: {supportCount}</p>
+                <p className="text-gray-600 dark:text-gray-400">Clientes: {clientCount}</p>
               </div>
             </div>
-          </div>
 
-          {/* Lista de Proyectos - Solo para Staff */}
-          <StaffOnly>
-            <div className="mt-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-bold mb-4 flex items-center text-gray-900 dark:text-white">
-                <Folder className="w-5 h-5 mr-2 text-orange-600" />
-                Proyectos Recientes
-              </h2>
-              {projects.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {projects.slice(0, 6).map((project) => (
-                    <div
-                      key={project.id}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition"
-                    >
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
-                        {project.name}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {project.description || "Sin descripción"}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                  No hay proyectos disponibles
-                </p>
-              )}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+              <div className="flex items-center gap-3 mb-2">
+                <Folder className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Proyectos</h3>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{projects.length}</p>
             </div>
-          </StaffOnly>
-        </main>
-      </div>
+
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+              <div className="flex items-center gap-3 mb-2">
+                <Activity className="w-6 h-6 text-green-600 dark:text-green-400" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Estado</h3>
+              </div>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">Activo</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                {totalTickets} tickets totales
+              </p>
+            </div>
+          </div>
+        )}
+      </main>
     </ProtectedRoute>
   );
 }

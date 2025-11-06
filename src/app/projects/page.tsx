@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Navbar from "@/components/Navbar";
 import FormModal from "@/components/FormModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { ProjectService } from "@/services";
@@ -178,7 +177,6 @@ export default function ProjectsPage() {
   return (
     <ProtectedRoute requiredRoles={["Administrador", "Soporte"]}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navbar />
 
         <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {/* Header */}

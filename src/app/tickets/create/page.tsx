@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
 import { useTickets } from "@/hooks/useTickets";
 import { useTicketCatalogs } from "@/hooks/useTicketCatalogs";
@@ -56,9 +55,9 @@ export default function CreateTicketPage() {
     }
 
     // Buscar automáticamente el estado "Abierto" (open)
-    console.log("📊 Estados disponibles:", statuses);
+    console.log("Estados disponibles:", statuses);
     const openStatus = statuses.find(s => s.name === 'open');
-    console.log("✅ Estado 'open' encontrado:", openStatus);
+    console.log("Estado 'open' encontrado:", openStatus);
     
     if (!openStatus) {
       setFormError(
@@ -76,11 +75,8 @@ export default function CreateTicketPage() {
       };
       
       console.log("Enviando ticket:", ticketData);
-      
-      // Crear ticket con estado "Abierto" automáticamente
+ 
       const createdTicket = await createTicket(ticketData);
-      
-      // Si hay archivos, subirlos al ticket recién creado
       if (files.length > 0 && createdTicket?.id) {
         try {
           await ticketService.uploadTicketFiles(createdTicket.id, files);
@@ -92,8 +88,7 @@ export default function CreateTicketPage() {
       } else {
         setSuccessMessage("¡Ticket creado exitosamente! El estado inicial es 'Abierto'.");
       }
-      
-      // Redirigir después de 2 segundos
+
       setTimeout(() => {
         router.push("/tickets");
       }, 2000);
@@ -136,13 +131,10 @@ export default function CreateTicketPage() {
   if (catalogsLoading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <Navbar />
-          <div className="flex items-center justify-center min-h-screen">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando catálogos...</p>
-            </div>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando catálogos...</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -151,12 +143,9 @@ export default function CreateTicketPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navbar />
-
-        <main className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-          {/* Header */}
-          <div className="mb-6 sm:mb-8">
+      <main className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Header */}
+        <div className="mb-6 sm:mb-8">
             <button
               onClick={() => router.back()}
               className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 mb-3 sm:mb-4 text-sm sm:text-base"
@@ -165,7 +154,7 @@ export default function CreateTicketPage() {
               Volver
             </button>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center flex-wrap">
-              <Ticket className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3 text-blue-600 flex-shrink-0" />
+              <Ticket className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3 text-blue-600 hrink-0" />
               <span>Crear Nuevo Ticket</span>
             </h1>
             <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
@@ -176,15 +165,15 @@ export default function CreateTicketPage() {
           {/* Mensajes */}
           {formError && (
             <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg flex items-start text-sm sm:text-base">
-              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 mt-0.5 flex-shrink-0" />
-              <span className="break-words">{formError}</span>
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 mt-0.5 shrink-0" />
+              <span className="wrap-break-words">{formError}</span>
             </div>
           )}
 
           {successMessage && (
             <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 rounded-lg flex items-start text-sm sm:text-base">
-              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 mt-0.5 flex-shrink-0" />
-              <span className="break-words">{successMessage}</span>
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 mt-0.5 hrink-0" />
+              <span className="wrap-break-words">{successMessage}</span>
             </div>
           )}
 
@@ -287,7 +276,7 @@ export default function CreateTicketPage() {
                   </select>
                 </div>
 
-                {/* Estado Automático - Solo informativo */}
+                {/* Estado Automático */}
                 <div className="sm:col-span-2 lg:col-span-1">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Estado Inicial
@@ -347,7 +336,7 @@ export default function CreateTicketPage() {
                         <button
                           type="button"
                           onClick={() => removeFile(index)}
-                          className="flex-shrink-0 text-red-600 hover:text-red-700 p-1"
+                          className="shrink-0 text-red-600 hover:text-red-700 p-1"
                         >
                           <X className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
@@ -373,11 +362,10 @@ export default function CreateTicketPage() {
                 >
                   Cancelar
                 </button>
-              </div>
-            </form>
-          </div>
-        </main>
-      </div>
+            </div>
+          </form>
+        </div>
+      </main>
     </ProtectedRoute>
   );
 }

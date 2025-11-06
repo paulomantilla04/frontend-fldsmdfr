@@ -43,6 +43,7 @@ export interface UpdateUser {
   email?: string;
   username?: string;
   password?: string;
+  roleId?: number;
 }
 
 export interface AuthResponse {
@@ -50,7 +51,6 @@ export interface AuthResponse {
   user: User;
 }
 
-// ==================== Ticket Interfaces ====================
 export type TicketTypeName = 'new_requirement' | 'adjustment_request' | 'service_request' | 'failure_report' | 'other';
 export type TicketPriorityName = 'high' | 'critical';
 export type TicketStatusName = 'pending' | 'open' | 'in_progress' | 'closed_support' | 'closed_client' | 'not_accepted' | 'corrected';
@@ -154,7 +154,6 @@ export interface CreateTicketFile {
   tag?: string;
 }
 
-// Interfaces de traducción para el frontend
 export const TicketTypeLabels: Record<TicketTypeName, string> = {
   new_requirement: 'Nuevo Requerimiento',
   adjustment_request: 'Solicitud de Ajuste',
@@ -210,4 +209,72 @@ export interface Role {
 export interface CreateRole {
   name: string;
   description?: string;
+}
+
+export type NotificationType = 'ticket_created' | 'ticket_assigned' | 'status_changed' | 'comment_added' | 'ticket_closed' | 'user_created';
+
+export interface Notification {
+  id: number;
+  user?: User;
+  ticket?: Ticket;
+  type: NotificationType;
+  title: string;
+  message: string;
+  isRead: boolean;
+  emailSent: boolean;
+  createdAt: string;
+}
+
+export type HistoryAction = 'created' | 'updated' | 'status_changed' | 'assigned' | 'comment_added' | 'file_uploaded' | 'closed';
+
+export interface TicketHistory {
+  id: number;
+  ticket?: Ticket;
+  user?: User;
+  action: HistoryAction;
+  field?: string;
+  oldValue?: string;
+  newValue?: string;
+  description?: string;
+  createdAt: string;
+}
+
+export interface ResolutionTime {
+  totalMinutes: number;
+  formatted: string;
+}
+
+export interface AverageResponseTime {
+  avgMinutes: number;
+  formatted: string;
+}
+
+export type EntityType = 'ticket' | 'user' | 'project' | 'comment' | 'file';
+export type AuditAction = 'create' | 'update' | 'delete' | 'download' | 'login' | 'logout' | 'status_change' | 'assign';
+
+export interface AuditLog {
+  id: number;
+  user?: User;
+  entityType: EntityType;
+  entityId?: number;
+  action: AuditAction;
+  details?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+export interface AuditLogFilters {
+  userId?: number;
+  entityType?: EntityType;
+  action?: AuditAction;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AuditLogsResponse {
+  logs: AuditLog[];
+  total: number;
 }
