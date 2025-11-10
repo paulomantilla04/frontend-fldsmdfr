@@ -31,17 +31,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {
             label: 'Administrar Tickets',
             href: '/tickets',
-            icon: <Ticket className="w-5 h-5 flex-shrink-0" />
+            icon: <Ticket className="w-5 h-5 shrink-0" />
         },
         {
             label: 'Reportes',
             href: '/reports',
-            icon: <Clipboard className="w-5 h-5 flex-shrink-0" />
+            icon: <Clipboard className="w-5 h-5 shrink-0" />
         },
         {
             label: 'Descargas',
             href: '/downloads',
-            icon: <Download className="w-5 h-5 flex-shrink-0" />
+            icon: <Download className="w-5 h-5 shrink-0" />
         },
     ]
 
@@ -69,7 +69,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   icon: (
                     <Image
                       src="/user.jpg"
-                      className="h-7 w-7 flex-shrink-0 rounded-full flex items-center justify-center"
+                      className="h-7 w-7 shrink-0 rounded-full flex items-center justify-center"
                       priority
                       alt="Avatar"
                       width={40}
@@ -89,7 +89,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     localStorage.removeItem("token");
                     router.push("/login");
                   },
-                  icon: <LogOut className="w-5 h-5 flex-shrink-0" />
+                  icon: <LogOut className="w-5 h-5 shrink-0" />
                 }}
               />
             </div>

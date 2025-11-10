@@ -15,7 +15,7 @@ export const getApiWithToken = async () => {
   }
 
   api = axios.create({
-    baseURL: "http://localhost:5000/api/v1",
+    baseURL: "http://localhost:5001/api/v1",
     headers,
     withCredentials: true,
   });

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Navbar from "@/components/Navbar";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { TicketService, ProjectService } from "@/services";
 import { useTicketCatalogs } from "@/hooks";
@@ -128,7 +127,6 @@ export default function EditTicketPage() {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <Navbar />
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
@@ -144,7 +142,6 @@ export default function EditTicketPage() {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <Navbar />
           <div className="max-w-2xl mx-auto px-4 py-8">
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
@@ -168,7 +165,6 @@ export default function EditTicketPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navbar />
 
         <main className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {/* Header */}

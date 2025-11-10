@@ -9,7 +9,7 @@ export default function UnauthorizedPage() {
   const { user, getUserFullName } = useAuth();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-red-50 to-orange-50">
       <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-xl text-center">
         <div className="flex justify-center mb-6">
           <div className="bg-red-100 p-4 rounded-full">
